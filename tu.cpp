@@ -1,5 +1,7 @@
-#include <iostream>
+ #include <iostream>
 #include <string>
+#include <limits>
+
 using namespace std;
 
 // Estructura para representar una organizadora de turismo
@@ -12,27 +14,24 @@ struct OrganizadoraTurismo {
     OrganizadoraTurismo* izquierda;
     OrganizadoraTurismo* derecha;
 
-    OrganizadoraTurismo(string codigo_rnt, int dia_vencimiento_rnt, int mes_vencimiento_rnt, int año_vencimiento_rnt, string nombre) {
-        this->codigo_rnt = codigo_rnt;
-        this->dia_vencimiento_rnt = dia_vencimiento_rnt;
-        this->mes_vencimiento_rnt = mes_vencimiento_rnt;
-        this->año_vencimiento_rnt = año_vencimiento_rnt;
-        this->nombre = nombre;
-        this->izquierda = nullptr;
-        this->derecha = nullptr;
-    }
+    OrganizadoraTurismo(string codigo_rnt, int dia_vencimiento_rnt, int mes_vencimiento_rnt, int año_vencimiento_rnt, string nombre) 
+        : codigo_rnt(codigo_rnt), 
+          dia_vencimiento_rnt(dia_vencimiento_rnt), 
+          mes_vencimiento_rnt(mes_vencimiento_rnt), 
+          año_vencimiento_rnt(año_vencimiento_rnt), 
+          nombre(nombre), 
+          izquierda(nullptr), 
+          derecha(nullptr) {}
 };
 
 // Función para insertar una organizadora de turismo en el árbol según su código RNT
 void insertarPorRNT(OrganizadoraTurismo*& raiz, OrganizadoraTurismo* nuevaOrganizadora) {
     if (raiz == nullptr) {
         raiz = nuevaOrganizadora;
+    } else if (nuevaOrganizadora->codigo_rnt < raiz->codigo_rnt) {
+        insertarPorRNT(raiz->izquierda, nuevaOrganizadora);
     } else {
-        if (nuevaOrganizadora->codigo_rnt < raiz->codigo_rnt) {
-            insertarPorRNT(raiz->izquierda, nuevaOrganizadora);
-        } else {
-            insertarPorRNT(raiz->derecha, nuevaOrganizadora);
-        }
+        insertarPorRNT(raiz->derecha, nuevaOrganizadora);
     }
 }
 
@@ -40,24 +39,13 @@ void insertarPorRNT(OrganizadoraTurismo*& raiz, OrganizadoraTurismo* nuevaOrgani
 void insertarPorVencimientoRNT(OrganizadoraTurismo*& raiz, OrganizadoraTurismo* nuevaOrganizadora) {
     if (raiz == nullptr) {
         raiz = nuevaOrganizadora;
+    } else if (nuevaOrganizadora->año_vencimiento_rnt < raiz->año_vencimiento_rnt ||
+               (nuevaOrganizadora->año_vencimiento_rnt == raiz->año_vencimiento_rnt && nuevaOrganizadora->mes_vencimiento_rnt < raiz->mes_vencimiento_rnt) ||
+               (nuevaOrganizadora->año_vencimiento_rnt == raiz->año_vencimiento_rnt && nuevaOrganizadora->mes_vencimiento_rnt == raiz->mes_vencimiento_rnt && 
+                nuevaOrganizadora->dia_vencimiento_rnt < raiz->dia_vencimiento_rnt)) {
+        insertarPorVencimientoRNT(raiz->izquierda, nuevaOrganizadora);
     } else {
-        if (nuevaOrganizadora->año_vencimiento_rnt < raiz->año_vencimiento_rnt) {
-            insertarPorVencimientoRNT(raiz->izquierda, nuevaOrganizadora);
-        } else if (nuevaOrganizadora->año_vencimiento_rnt > raiz->año_vencimiento_rnt) {
-            insertarPorVencimientoRNT(raiz->derecha, nuevaOrganizadora);
-        } else {
-            if (nuevaOrganizadora->mes_vencimiento_rnt < raiz->mes_vencimiento_rnt) {
-                insertarPorVencimientoRNT(raiz->izquierda, nuevaOrganizadora);
-            } else if (nuevaOrganizadora->mes_vencimiento_rnt > raiz->mes_vencimiento_rnt) {
-                insertarPorVencimientoRNT(raiz->derecha, nuevaOrganizadora);
-            } else {
-                if (nuevaOrganizadora->dia_vencimiento_rnt < raiz->dia_vencimiento_rnt) {
-                    insertarPorVencimientoRNT(raiz->izquierda, nuevaOrganizadora);
-                } else {
-                    insertarPorVencimientoRNT(raiz->derecha, nuevaOrganizadora);
-                }
-            }
-        }
+        insertarPorVencimientoRNT(raiz->derecha, nuevaOrganizadora);
     }
 }
 
@@ -91,9 +79,26 @@ void posorden(OrganizadoraTurismo* raiz) {
     }
 }
 
+// Función para liberar la memoria del árbol
+void liberarArbol(OrganizadoraTurismo*& raiz) {
+    if (raiz != nullptr) {
+        liberarArbol(raiz->izquierda);
+        liberarArbol(raiz->derecha);
+        delete raiz;
+        raiz = nullptr;
+    }
+}
+
 int main() {
     OrganizadoraTurismo* raizRNT = nullptr;
     OrganizadoraTurismo* raizVencimientoRNT = nullptr;
+
+    const int REGISTRAR = 1;
+    const int MOSTRAR_PREORDEN = 2;
+    const int MOSTRAR_INORDEN = 3;
+    const int MOSTRAR_POSORDEN = 4;
+    const int SALIR = 5;
+
     int opcion;
     do {
         cout << "\nMenu:" << endl;
@@ -103,12 +108,19 @@ int main() {
         cout << "4. Mostrar organizadoras de turismo (Posorden)" << endl;
         cout << "5. Salir" << endl;
         cout << "Ingrese su opcion: ";
-        cin >> opcion;
+        
+        if (!(cin >> opcion)) {
+            cout << "Entrada no válida. Por favor ingrese un número." << endl;
+            cin.clear(); // Limpia el estado de error del stream
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Limpia el buffer
+            continue; // Continúa con el siguiente ciclo
+        }
 
         switch(opcion) {
-            case 1: {
+            case REGISTRAR: {
                 string codigo_rnt, nombre;
                 int dia_vencimiento_rnt, mes_vencimiento_rnt, año_vencimiento_rnt;
+
                 cout << "Ingrese el código RNT de la organizadora de turismo: ";
                 cin >> codigo_rnt;
                 cout << "Ingrese el día de vencimiento del RNT: ";
@@ -126,37 +138,42 @@ int main() {
                 insertarPorVencimientoRNT(raizVencimientoRNT, nuevaOrganizadora);
                 break;
             }
-            case 2:
+            case MOSTRAR_PREORDEN:
                 cout << "\nOrganizadoras de turismo (Preorden):" << endl;
                 cout << "Árbol por RNT:" << endl;
                 preorden(raizRNT);
                 cout << "Subárbol por fecha de vencimiento del RNT:" << endl;
                 preorden(raizVencimientoRNT);
                 break;
-            case 3:
+            case MOSTRAR_INORDEN:
                 cout << "\nOrganizadoras de turismo (Inorden):" << endl;
                 cout << "Árbol por RNT:" << endl;
                 inorden(raizRNT);
                 cout << "Subárbol por fecha de vencimiento del RNT:" << endl;
                 inorden(raizVencimientoRNT);
                 break;
-            case 4:
+            case MOSTRAR_POSORDEN:
                 cout << "\nOrganizadoras de turismo (Posorden):" << endl;
                 cout << "Árbol por RNT:" << endl;
                 posorden(raizRNT);
                 cout << "Subárbol por fecha de vencimiento del RNT:" << endl;
                 posorden(raizVencimientoRNT);
                 break;
-            case 5:
+            case SALIR:
                 cout << "Saliendo del programa." << endl;
                 break;
             default:
-                cout << "Opción no válida. Por favor ingrese una opción válida." << endl;
+                cout << "Opción no válida. Por favor, ingrese una opción válida." << endl;
         }
 
-    } while (opcion != 5);
+    } while (opcion != SALIR);
+
+    // Liberar memoria antes de salir
+    liberarArbol(raizRNT);
+    liberarArbol(raizVencimientoRNT);
 
     return 0;
 }
+
 
 
